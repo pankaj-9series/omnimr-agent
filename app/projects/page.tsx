@@ -1,16 +1,17 @@
+'use client';
+
 import React, { useState } from 'react';
-import { Project } from '@/lib/types';
-import Button from '../ui/Button';
-import Card from '../ui/Card';
-import Input from '../ui/Input';
+import Button from '@/components/ui/Button';
+import Card from '@/components/ui/Card';
+import Input from '@/components/ui/Input';
 import { THEMES } from '@/lib/constants';
-import ArrowLeftIcon from '../icons/ArrowLeftIcon';
-import { useAppContext } from '../../lib/context/AppContext';
+import ArrowLeftIcon from '@/components/icons/ArrowLeftIcon';
+import { useAppContext } from '@/lib/context/AppContext';
+import { useRouter } from 'next/navigation';
 
-// Removed ProjectScreenProps interface
-
-const ProjectScreen: React.FC = () => {
-  const { projects, handleProjectCreate, handleOpenProject, handleBackToDashboard } = useAppContext();
+export default function ProjectScreenPage() {
+  const { projects, handleProjectCreate, handleOpenProject } = useAppContext();
+  const router = useRouter();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -25,10 +26,12 @@ const ProjectScreen: React.FC = () => {
     setShowCreateForm(false);
   };
 
+  const handleBack = () => {
+    router.push('/dashboard'); // Navigate back to the dashboard
+  };
+
   return (
     <div className="">
-      {/* Header is now handled by layout.tsx - removed from here */}
-
       <main className="max-w-7xl mx-auto py-8">
         {showCreateForm ? (
           <Card className="p-6 max-w-2xl mx-auto">
@@ -93,6 +96,4 @@ const ProjectScreen: React.FC = () => {
       </main>
     </div>
   );
-};
-
-export default ProjectScreen;
+}

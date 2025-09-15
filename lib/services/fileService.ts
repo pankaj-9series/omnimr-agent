@@ -71,33 +71,13 @@ export const validateFilePath = (filePath: string): boolean => {
   }
 };
 
-export const deleteFile = (filePath: string): boolean => {
-  try {
-    if (validateFilePath(filePath)) {
-      fs.unlinkSync(filePath);
-      return true;
-    }
-    return false;
-  } catch (error) {
-    console.error('Error deleting file:', error);
-    return false;
-  }
-};
-
-export const getFileStats = (filePath: string) => {
+export const readCsvFileContent = (filePath: string): string => {
   try {
     if (!validateFilePath(filePath)) {
-      throw new Error('Invalid file path');
+      throw new Error('Invalid file path or not a CSV file');
     }
-
-    const stats = fs.statSync(filePath);
-    return {
-      size: stats.size,
-      created: stats.birthtime,
-      modified: stats.mtime,
-      isFile: stats.isFile()
-    };
+    return fs.readFileSync(filePath, 'utf-8');
   } catch (error) {
-    throw new Error(`Error getting file stats: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(`Error reading CSV file: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 };

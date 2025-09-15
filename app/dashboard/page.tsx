@@ -1,20 +1,18 @@
-import React from 'react';
-import { Project } from '@/lib/types';
-import Button from '../ui/Button';
-import Card from '../ui/Card';
-import FolderIcon from '../icons/FolderIcon';
-import TrendingUpIcon from '../icons/TrendingUpIcon';
-import BarChartIcon from '../icons/BarChartIcon';
-import DocumentReportIcon from '../icons/DocumentReportIcon';
-import PlusIcon from '../icons/PlusIcon';
-import LogoutIcon from '../icons/LogoutIcon';
-import CogIcon from '../icons/CogIcon';
-import UsersIcon from '../icons/UsersIcon';
-import SparklesIcon from '../icons/SparklesIcon';
-import PresentationChartBarIcon from '../icons/PresentationChartBarIcon';
-import { useAppContext } from '../../lib/context/AppContext';
+'use client';
 
-// Removed DashboardScreenProps interface as props will be consumed from context
+import React from 'react';
+import Button from '@/components/ui/Button';
+import Card from '@/components/ui/Card';
+import FolderIcon from '@/components/icons/FolderIcon';
+import TrendingUpIcon from '@/components/icons/TrendingUpIcon';
+import BarChartIcon from '@/components/icons/BarChartIcon';
+import DocumentReportIcon from '@/components/icons/DocumentReportIcon';
+import PlusIcon from '@/components/icons/PlusIcon';
+import CogIcon from '@/components/icons/CogIcon';
+import SparklesIcon from '@/components/icons/SparklesIcon';
+import PresentationChartBarIcon from '@/components/icons/PresentationChartBarIcon';
+import { useAppContext } from '@/lib/context/AppContext';
+import { useRouter } from 'next/navigation';
 
 const StatCard: React.FC<{ icon: React.ReactNode; title: string; value: number | string; }> = ({ icon, title, value }) => (
     <Card className="p-4 flex items-center">
@@ -35,14 +33,21 @@ const statusStyles: { [key: string]: string } = {
 };
 
 
-const DashboardScreen: React.FC = () => {
-    const { projects, handleOpenProject, handleNavigateToProjects, setAppState, handleLogout, handleNavigateToGitHub } = useAppContext();
+export default function DashboardScreenPage() {
+    const { projects, handleOpenProject } = useAppContext();
+    const router = useRouter();
     const recentProjects = projects.slice(0, 4);
     
+    const handleNewProjectClick = () => {
+        router.push('/projects');
+    }
+
+    const handleManageProjectsClick = () => {
+        router.push('/projects');
+    }
+
     return (
         <div className="">
-            {/* Header is now handled by layout.tsx - removed from here */}
-
             <main className="max-w-7xl mx-auto py-8">
                 <div>
                     <h2 className="text-2xl font-bold text-slate-900">Welcome back!</h2>
@@ -61,7 +66,7 @@ const DashboardScreen: React.FC = () => {
                     <div className="lg:col-span-2">
                          <div className="flex justify-between items-center mb-4">
                             <h3 className="text-xl font-semibold text-slate-900">Recent Projects</h3>
-                            <Button variant="secondary" size="sm" onClick={handleNavigateToProjects}>View All Projects</Button>
+                            <Button variant="secondary" size="sm" onClick={handleManageProjectsClick}>View All Projects</Button>
                         </div>
                         <div className="space-y-4">
                             {recentProjects.map(project => (
@@ -92,8 +97,8 @@ const DashboardScreen: React.FC = () => {
                         <Card className="p-5">
                              <h3 className="font-semibold text-lg">Quick Actions</h3>
                              <div className="mt-4 space-y-2">
-                                <Button onClick={() => setAppState('projectManagement')} className="w-full justify-center flex items-center gap-2"><PlusIcon className="w-5 h-5"/> Create New Project</Button>
-                                <Button onClick={handleNavigateToProjects} variant="secondary" className="w-full justify-center flex items-center gap-2"><CogIcon className="w-5 h-5"/> Manage Projects</Button>
+                                <Button onClick={handleNewProjectClick} className="w-full justify-center flex items-center gap-2"><PlusIcon className="w-5 h-5"/> Create New Project</Button>
+                                <Button onClick={handleManageProjectsClick} variant="secondary" className="w-full justify-center flex items-center gap-2"><CogIcon className="w-5 h-5"/> Manage Projects</Button>
                              </div>
                         </Card>
                          <Card className="p-5">
@@ -118,6 +123,4 @@ const DashboardScreen: React.FC = () => {
             </main>
         </div>
     );
-};
-
-export default DashboardScreen;
+}

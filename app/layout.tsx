@@ -3,6 +3,7 @@ import './globals.css'
 import Header from '../components/Header'
 import { AppContextProvider, useAppContext } from '../lib/context/AppContext'
 import React from 'react'
+import { usePathname } from 'next/navigation'
 
 export default function RootLayout({
   children,
@@ -17,17 +18,19 @@ export default function RootLayout({
 }
 
 function LayoutContent({ children }: { children: React.ReactNode }) {
-  const { currentStep, handleGoToStep, currentProject, handleBackToProjects, appState, csvData, slides, backActions, continueActions, backLabels, continueLabels, continueDisabled } = useAppContext();
+  const { currentStep, currentProject, csvData, slides, backActions, continueActions, backLabels, continueLabels, continueDisabled } = useAppContext();
+  const pathname = usePathname();
+  const isWorkflowRoute = pathname.startsWith('/workflow');
 
   return (
     <html lang="en">
       <body className="h-screen w-screen flex bg-slate-100 font-sans text-slate-800 overflow-hidden">
         <div className="flex flex-col flex-1">
-          <Header currentStep={currentStep} setStep={handleGoToStep} project={currentProject} onBackToProjects={handleBackToProjects} />
+          <Header currentStep={currentStep} project={currentProject} />
           <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto">
             {children}
           </main>
-          {appState === 'workflow' && (
+          {isWorkflowRoute && (
              <div className="flex-shrink-0 bg-white/80 backdrop-blur-sm border-t border-slate-200 px-8 py-4 flex justify-between items-center sticky bottom-0">
              <div>
                {currentStep > 0 && (

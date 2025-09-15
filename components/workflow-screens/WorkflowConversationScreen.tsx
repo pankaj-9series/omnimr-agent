@@ -1,15 +1,15 @@
+'use client';
+
 import React, { useState } from 'react';
 import { Project, Slide, ParsedCSVData, Suggestion } from '@/lib/types';
-import Card from '../ui/Card';
-import Button from '../ui/Button';
-import Spinner from '../ui/Spinner';
-import { useAppContext } from '../../lib/context/AppContext';
+import Card from '@/components/ui/Card';
+import Button from '@/components/ui/Button';
+import Spinner from '@/components/ui/Spinner';
+import { useAppContext } from '@/lib/context/AppContext';
 
-// Removed ConversationScreenProps interface
-
-const ConversationScreen: React.FC = () => {
+const WorkflowConversationScreen: React.FC = () => {
   const {
-    project,
+    currentProject: project,
     addSlide,
     removeSlide,
     slides,
@@ -156,4 +156,4 @@ const ConversationScreen: React.FC = () => {
   );
 };
 
-export default ConversationScreen;
+export default WorkflowConversationScreen;

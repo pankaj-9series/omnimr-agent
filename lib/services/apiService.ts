@@ -1,4 +1,3 @@
-// lib/services/apiService.ts
 import { ApiResponse, AnalyticsResponse, UploadResponse } from '../types';
 
 const API_BASE_URL = '/api';
@@ -46,16 +45,6 @@ export const getChartSuggestion = async (filePath: string): Promise<AnalyticsRes
 
   if (!response.ok) {
     throw new Error(`Chart suggestion API error: ${response.status}`);
-  }
-
-  return response.json();
-};
-
-export const getHealthStatus = async () => {
-  const response = await fetch(`${API_BASE_URL}/health`);
-  
-  if (!response.ok) {
-    throw new Error(`Health check API error: ${response.status}`);
   }
 
   return response.json();

@@ -1,14 +1,14 @@
+'use client';
+
 import React, { useState } from 'react';
 import { ParsedCSVData, Suggestion } from '@/lib/types';
-import Button from '../ui/Button';
-import Card from '../ui/Card';
-import Spinner from '../ui/Spinner';
-import UploadIcon from '../icons/UploadIcon';
-import { useAppContext } from '../../lib/context/AppContext';
+import Button from '@/components/ui/Button';
+import Card from '@/components/ui/Card';
+import Spinner from '@/components/ui/Spinner';
+import UploadIcon from '@/components/icons/UploadIcon';
+import { useAppContext } from '@/lib/context/AppContext';
 
-// Removed UploadScreenProps interface
-
-const UploadScreen: React.FC = () => {
+const WorkflowUploadScreen: React.FC = () => {
   const { handleUploadSuccess: onUploadSuccess, setIsSuggestionsLoading, setSuggestions } = useAppContext();
   const [isUploading, setIsUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
@@ -122,4 +122,4 @@ const UploadScreen: React.FC = () => {
   );
 };
 
-export default UploadScreen;
+export default WorkflowUploadScreen;

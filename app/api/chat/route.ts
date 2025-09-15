@@ -2,6 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { processSingleMessage, processConversation } from '@/lib/services/agentService';
 import { ChatRequest, ConversationRequest, ApiResponse, ApiError } from '@/lib/types';
+import { readCsvFileContent, validateFilePath } from '@/lib/services/fileService';
+import { parse } from 'csv-parse/sync';
 
 export async function POST(request: NextRequest) {
   try {
@@ -9,21 +11,33 @@ export async function POST(request: NextRequest) {
     const { message, filePath, messages }: ChatRequest & ConversationRequest = body;
 
     // Handle single message chat
+    if (!message) {
+      return NextResponse.json({
+        error: "Message is required",
+        example: { 
+          message: "Hello, how are you?",
+          filePath: "/path/to/uploaded/file.csv (optional)"
+        }
+      } as ApiError, { status: 400 });
+    }
+    
+    // Handle single message
     if (message) {
-      if (!message) {
-        return NextResponse.json({
-          error: "Message is required",
-          example: { 
-            message: "Hello, how are you?",
-            filePath: "/path/to/uploaded/file.csv (optional)"
-          }
-        } as ApiError, { status: 400 });
-      }
 
       // If filePath is provided, enhance the message with CSV context
       let enhancedMessage = message;
       if (filePath) {
-        enhancedMessage = `${message}\n\nPlease refer to the CSV data at: ${filePath}`;
+        if (!validateFilePath(filePath)) {
+          return NextResponse.json({
+            error: "Invalid file path",
+            message: "The provided file path is invalid or not a CSV file.",
+            filePath: filePath
+          } as ApiError, { status: 400 });
+        }
+        const csvContent = readCsvFileContent(filePath);
+        const records = parse(csvContent, { columns: true, skip_empty_lines: true });
+        const csvJson = JSON.stringify(records.slice(0,3));
+        enhancedMessage = `${message}\n\nPlease refer to the following CSV data in JSON format: ${csvJson}`;
       }
 
       const responseText = await processSingleMessage(enhancedMessage);

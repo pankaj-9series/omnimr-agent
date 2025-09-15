@@ -1,17 +1,16 @@
+'use client';
+
 import React from 'react';
 import { ParsedCSVData } from '@/lib/types';
-import Card from '../ui/Card';
-import Button from '../ui/Button';
-import { useAppContext } from '../../lib/context/AppContext';
+import Card from '@/components/ui/Card';
+import Button from '@/components/ui/Button';
+import { useAppContext } from '@/lib/context/AppContext';
 
-// Removed CleanupScreenProps interface
-
-const CleanupScreen: React.FC = () => {
+const WorkflowCleanupScreen: React.FC = () => {
   const { csvData: uploadedData, handleDataCleaned } = useAppContext();
   
   const handleCleanup = () => {
     if (uploadedData) {
-      // For now, just pass the data through without cleaning
       handleDataCleaned(uploadedData);
     }
   };
@@ -96,4 +95,4 @@ const CleanupScreen: React.FC = () => {
   );
 };
 
-export default CleanupScreen;
+export default WorkflowCleanupScreen;

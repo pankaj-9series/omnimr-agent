@@ -3,12 +3,9 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { Project, Slide, ParsedCSVData, Suggestion } from '../types';
 import { MOCK_PROJECTS, DASHBOARD_STEPS } from '../constants';
-
-type AppState = 'login' | 'dashboard' | 'projectManagement' | 'workflow' | 'github';
+import { useRouter } from 'next/navigation';
 
 interface AppContextType {
-  appState: AppState;
-  setAppState: React.Dispatch<React.SetStateAction<AppState>>;
   projects: Project[];
   setProjects: React.Dispatch<React.SetStateAction<Project[]>>;
   currentProject: Project | null;
@@ -26,11 +23,10 @@ interface AppContextType {
   isSuggestionsLoading: boolean;
   setIsSuggestionsLoading: React.Dispatch<React.SetStateAction<boolean>>;
   
-  // Handlers
+  // Handlers - updated to use router for navigation
   handleLogin: () => void;
   handleLogout: () => void;
-  handleNavigateToProjects: () => void;
-  handleBackToDashboard: () => void;
+  handleBackToDashboard: () => void; // Removed, navigation via router.back() or router.push('/dashboard')
   handleNavigateToGitHub: () => void;
   handleProjectCreate: (projectData: Pick<Project, 'name' | 'description' | 'theme'>) => void;
   handleOpenProject: (projectToOpen: Project) => void;
@@ -54,7 +50,6 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppContextProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [appState, setAppState] = useState<AppState>('login');
   const [projects, setProjects] = useState<Project[]>(MOCK_PROJECTS);
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
   const [currentStep, setCurrentStep] = useState(0); 
@@ -65,12 +60,22 @@ export const AppContextProvider: React.FC<{ children: ReactNode }> = ({ children
   );
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [isSuggestionsLoading, setIsSuggestionsLoading] = useState(false);
+  
+  const router = useRouter();
 
-  const handleLogin = () => setAppState('dashboard');
-  const handleLogout = () => setAppState('login');
-  const handleNavigateToProjects = () => setAppState('projectManagement');
-  const handleBackToDashboard = () => setAppState('dashboard');
-  const handleNavigateToGitHub = () => setAppState('github');
+  const handleLogin = () => {
+    router.push('/dashboard'); // Navigate using router
+  };
+  const handleLogout = () => {
+    router.push('/login'); // Navigate using router
+  };
+  // const handleNavigateToProjects = () => router.push('/projects'); // Replaced by direct router calls
+  const handleBackToDashboard = () => {
+    router.push('/dashboard'); // Navigate using router
+  };
+  const handleNavigateToGitHub = () => {
+    router.push('/github'); // Navigate using router
+  };
   
   const handleProjectCreate = (projectData: Pick<Project, 'name' | 'description' | 'theme'>) => {
     const newProject: Project = {
@@ -90,7 +95,7 @@ export const AppContextProvider: React.FC<{ children: ReactNode }> = ({ children
     setSlides([]);
     setCsvData(null);
     setCurrentStep(0);
-    setAppState('workflow');
+    router.push('/workflow/upload'); // Navigate to workflow
     setRequestId(null);
     if (typeof window !== 'undefined') {
       localStorage.removeItem('omnimr_request_id');
@@ -100,7 +105,7 @@ export const AppContextProvider: React.FC<{ children: ReactNode }> = ({ children
   
   const handleBackToProjects = () => {
     setCurrentProject(null);
-    setAppState('projectManagement');
+    router.push('/projects'); // Navigate to projects
   }
 
   const handleUploadSuccess = (data: ParsedCSVData, newRequestId: string) => {
@@ -109,14 +114,18 @@ export const AppContextProvider: React.FC<{ children: ReactNode }> = ({ children
     if (typeof window !== 'undefined') {
       localStorage.setItem('omnimr_request_id', newRequestId);
     }
+    setCurrentStep(1); // Move to next workflow step
+    router.push('/workflow/cleanup');
   };
 
   const handleDataCleaned = (cleanedData: ParsedCSVData) => {
     setCsvData(cleanedData);
+    setCurrentStep(2); // Move to next workflow step
+    router.push('/workflow/conversation');
   };
 
   const handleCleanupComplete = () => {
-    setCurrentStep(2);
+    setCurrentStep(2); // Already at 2, but just in case, no navigation here yet
   };
   
   const addSlide = (newSlide: Slide) => {
@@ -134,6 +143,13 @@ export const AppContextProvider: React.FC<{ children: ReactNode }> = ({ children
   const handleGoToStep = (step: number) => {
     if (step < currentStep) {
       setCurrentStep(step);
+      const stepRouteMap: { [key: number]: string } = {
+        0: '/workflow/upload',
+        1: '/workflow/cleanup',
+        2: '/workflow/conversation',
+        3: '/workflow/export',
+      };
+      router.push(stepRouteMap[step]);
     }
   };
 
@@ -148,7 +164,7 @@ export const AppContextProvider: React.FC<{ children: ReactNode }> = ({ children
       );
       setCurrentProject(null);
     }
-    setAppState('dashboard');
+    router.push('/dashboard'); // Navigate to dashboard
     setRequestId(null);
     if (typeof window !== 'undefined') {
       localStorage.removeItem('omnimr_request_id');
@@ -156,15 +172,15 @@ export const AppContextProvider: React.FC<{ children: ReactNode }> = ({ children
   };
 
   const backActions: { [key: number]: () => void } = {
-    1: () => setCurrentStep(0),
-    2: () => setCurrentStep(1),
-    3: () => setCurrentStep(2)
+    1: () => router.push('/workflow/upload'),
+    2: () => router.push('/workflow/cleanup'),
+    3: () => router.push('/workflow/conversation')
   };
 
   const continueActions: { [key: number]: () => void } = {
-    0: () => { if(csvData) setCurrentStep(1) },
-    1: handleCleanupComplete,
-    2: () => setCurrentStep(3),
+    0: () => { if(csvData) router.push('/workflow/cleanup') },
+    1: () => { if(csvData) router.push('/workflow/conversation') },
+    2: () => router.push('/workflow/export'),
     3: handleCompleteProject
   };
 
@@ -191,8 +207,6 @@ export const AppContextProvider: React.FC<{ children: ReactNode }> = ({ children
   return (
     <AppContext.Provider
       value={{
-        appState,
-        setAppState,
         projects,
         setProjects,
         currentProject,
@@ -211,7 +225,6 @@ export const AppContextProvider: React.FC<{ children: ReactNode }> = ({ children
         setIsSuggestionsLoading,
         handleLogin,
         handleLogout,
-        handleNavigateToProjects,
         handleBackToDashboard,
         handleNavigateToGitHub,
         handleProjectCreate,

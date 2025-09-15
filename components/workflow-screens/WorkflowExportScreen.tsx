@@ -1,22 +1,19 @@
+'use client';
+
 import React from 'react';
-import { Project, Slide } from '@/lib/types';
-import Card from '../ui/Card';
-import Button from '../ui/Button';
-import DownloadIcon from '../icons/DownloadIcon';
-import { useAppContext } from '../../lib/context/AppContext';
+import Card from '@/components/ui/Card';
+import Button from '@/components/ui/Button';
+import DownloadIcon from '@/components/icons/DownloadIcon';
+import { useAppContext } from '@/lib/context/AppContext';
 
-// Removed ExportScreenProps interface
-
-const ExportScreen: React.FC = () => {
+const WorkflowExportScreen: React.FC = () => {
   const { slides, currentProject: project } = useAppContext();
 
   const handleExportPPT = () => {
-    // Placeholder for PPT export functionality
     alert('PPT export functionality will be implemented here');
   };
 
   const handleExportPDF = () => {
-    // Placeholder for PDF export functionality
     alert('PDF export functionality will be implemented here');
   };
 
@@ -68,7 +65,7 @@ const ExportScreen: React.FC = () => {
                 Project: {project?.name || 'Untitled'}
               </span>
             </div>
-            
+
             <div className="space-y-3">
               {slides.map((slide) => (
                 <div key={slide.slideNumber} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
@@ -89,4 +86,4 @@ const ExportScreen: React.FC = () => {
   );
 };
 
-export default ExportScreen;
+export default WorkflowExportScreen;
