@@ -1,0 +1,93 @@
+/* Custom CSS for OmniMR Dashboard */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Inter', sans-serif; /* Using Inter font, assuming it's imported or available */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #f0f4f8; /* brand-bg-light */
+  color: #334155; /* brand-charcoal */
+  line-height: 1.5;
+}
+
+/* Custom styles for components not fully covered by Tailwind or for specific overrides */
+
+/* Base button styles - if Button.tsx is not fully covering this */
+.btn {
+  @apply inline-flex items-center justify-center font-semibold rounded-lg shadow-sm transition-all duration-150 text-sm py-2 px-4 border border-transparent;
+}
+
+.btn:focus {
+  @apply outline-none ring-2 ring-offset-2 ring-blue-500;
+}
+
+.btn:disabled {
+  @apply opacity-50 cursor-not-allowed;
+}
+
+.btn-primary {
+  @apply bg-brand-accent-blue text-white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  @apply bg-blue-700;
+}
+
+.btn-secondary {
+  @apply bg-white text-slate-700 border-slate-300;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  @apply bg-gray-50;
+}
+
+.btn-sm {
+  @apply py-1.5 px-3 text-xs;
+}
+
+.btn-lg {
+  @apply py-3 px-6 text-base;
+}
+
+/* Card Styles */
+.card {
+  @apply bg-white border border-gray-200 rounded-xl shadow-sm transition-shadow duration-150;
+}
+
+.card:hover {
+  @apply shadow-md;
+}
+
+/* Progress Bar */
+.progress-bar {
+  @apply bg-gray-200 rounded-full h-2 overflow-hidden;
+}
+
+.progress-fill {
+  @apply bg-brand-accent-blue h-full rounded-full transition-all duration-300;
+}
+
+/* Status Badges */
+.status-badge {
+  @apply text-xs font-semibold py-0.5 px-2.5 rounded-full;
+}
+
+.status-in-progress {
+  @apply bg-blue-100 text-blue-800;
+}
+
+.status-completed {
+  @apply bg-green-100 text-green-800;
+}
+
+.status-draft {
+  @apply bg-yellow-100 text-yellow-800;
+}
