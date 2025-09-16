@@ -110,8 +110,8 @@ const WorkflowConversationScreen: React.FC = () => {
   };
   
   return (
-    <div className="h-full flex flex-col lg:flex-row gap-6 relative">
-      <div className="w-1/4 flex flex-col h-full bg-white p-4 rounded-lg shadow-sm flex-1">
+    <div className="h-full flex lg:flex-row gap-6 relative w-full">
+     <div className="h-full bg-white p-4 rounded-lg shadow-sm w-1/4">
         <h2 className="text-xl font-bold text-slate-900 mb-4">Suggested Analyses</h2>
         <div className="flex-grow overflow-y-auto pr-2 h-full">
           <SuggestionPrompts
@@ -124,7 +124,7 @@ const WorkflowConversationScreen: React.FC = () => {
         </div>
       </div>
       
-      <div className="lg:w-3/4 flex flex-col h-full flex-1">
+      <div className="h-full w-3/4">
         {isLoading && (
             <div className="bg-white p-4 rounded-lg shadow-sm h-full flex items-center justify-center flex-1">
                 <Spinner />

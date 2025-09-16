@@ -53,7 +53,7 @@ export default function WorkflowPage({ params }: WorkflowPageProps) {
   };
 
   return (
-    <div className="min-h-[calc(100vh-12rem)] flex flex-col items-center justify-start py-8">
+    <div className="flex flex-col items-center justify-start py-8 h-full">
       {renderWorkflowScreen()}
     </div>
   );
