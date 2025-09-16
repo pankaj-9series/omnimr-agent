@@ -50,7 +50,7 @@ const Stepper: React.FC<StepperProps> = ({ steps, currentStep, onStepClick }) =>
               {/* Step Icon */}
               <div className={circleClasses}>
                 {isActive && (
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-sky-400 opacity-75"></span>
+                  <span className="absolute inline-flex h-full w-full rounded-full"></span>
                 )}
                  <span className="relative">
                     {isCompleted ? (
