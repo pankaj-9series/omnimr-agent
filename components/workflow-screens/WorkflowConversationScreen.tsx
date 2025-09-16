@@ -39,7 +39,7 @@ const WorkflowConversationScreen: React.FC = () => {
         .catch(error => console.error("Failed to re-fetch suggestions:", error))
         .finally(() => setIsSuggestionsLoading(false));
     }
-  }, [requestId, isSuggestionsLoading, setSuggestions]);
+  }, [requestId, setSuggestions]);
 
   const handleSendMessage = async (messageObject: Suggestion, index: number) => { 
     if (isLoading || !requestId) return; 
