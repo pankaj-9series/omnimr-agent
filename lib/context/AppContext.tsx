@@ -126,6 +126,7 @@ export const AppContextProvider: React.FC<{ children: ReactNode }> = ({ children
 
   const handleCleanupComplete = () => {
     setCurrentStep(2); // Already at 2, but just in case, no navigation here yet
+    router.push('/workflow/conversation');
   };
   
   const addSlide = (newSlide: Slide) => {

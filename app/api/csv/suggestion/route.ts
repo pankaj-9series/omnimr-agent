@@ -1,26 +1,24 @@
 // app/api/csv/suggestion/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getChartRecommendationWithData } from '@/lib/services/agentService';
-import { validateFilePath } from '@/lib/services/fileService';
 import { ApiError, AnalyticsResponse } from '@/lib/types';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { filePath } = body;
+    const { request_id: requestId } = body;
 
-    if (!filePath || !validateFilePath(filePath)) {
+    if (!requestId) {
       return NextResponse.json({
-        error: "Valid file path is required",
-        message: "Please upload a CSV file first using /api/csv/upload endpoint",
+        error: "Request ID is required",
+        message: "Please provide a request_id in the request body.",
         example: { 
-          filePath: "/path/to/uploaded/file.csv"
+          request_id: "your_unique_request_id"
         }
       } as ApiError, { status: 400 });
     }
 
-    // Get chart recommendation AND chart data in one call
-    const suggestionResult = await getChartRecommendationWithData(filePath);
+    const suggestionResult = await getChartRecommendationWithData(requestId);
 
     const response: AnalyticsResponse = {
       success: true,

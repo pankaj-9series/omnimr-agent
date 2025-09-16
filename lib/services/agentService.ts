@@ -3,6 +3,7 @@ import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { HumanMessage, AIMessage } from "@langchain/core/messages";
 import { StateGraph, MessagesAnnotation } from "@langchain/langgraph";
 import { AgentConfig } from '../types';
+import { readCsvFileContent } from "./fileService"; // Import readCsvFileContent
 
 // Configuration
 const config = {
@@ -99,13 +100,18 @@ export const processConversation = async (messages: string[]): Promise<{
   }
 };
 
-export const getChartRecommendationWithData = async (filePath: string): Promise<string> => {
+export const getChartRecommendationWithData = async (requestId: string): Promise<string> => {
   try {
-    console.log(`Getting chart recommendation with data for: ${filePath}`);
-    
+    console.log(`Getting chart recommendation with data for request ID: ${requestId}`);
+    const csvContent = readCsvFileContent(requestId);
+
     const result = await agentApp.invoke({
       messages: [new HumanMessage(`
-Analyze the CSV file at ${filePath} and provide a complete chart solution:
+Analyze the following CSV data and provide a complete chart solution:
+
+<csv_data>
+${csvContent}
+</csv_data>
 
 1. Recommend the BEST chart type for this data (line, bar, pie, or scatter)
 2. Automatically select the most meaningful X and Y axes 

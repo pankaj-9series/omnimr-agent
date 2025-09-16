@@ -1,23 +1,14 @@
-import { ApiResponse, AnalyticsResponse, UploadResponse } from '../types';
+import { UploadResponse, Suggestion } from '../types';
 import api from '../api';
 import {
-  CHAT_API_PATH,
   CSV_UPLOAD_API_PATH,
   CSV_SUGGESTION_API_PATH,
 } from '../constants/api';
 
-export const chat = async (message: string, filePath?: string): Promise<ApiResponse> => {
-  try {
-    const response = await api.post(CHAT_API_PATH, { message, filePath });
-    return response.data;
-  } catch (error: any) {
-    throw new Error(`Chat API error: ${error.response?.status || error.message}`);
-  }
-};
-
-export const uploadCSV = async (file: File): Promise<UploadResponse> => {
+export const uploadFile = async (requestId: string, file: File): Promise<UploadResponse> => {
   const formData = new FormData();
-  formData.append('csvFile', file);
+  formData.append('request_id', requestId);
+  formData.append('file', file);
 
   try {
     const response = await api.post(CSV_UPLOAD_API_PATH, formData, {
@@ -31,9 +22,9 @@ export const uploadCSV = async (file: File): Promise<UploadResponse> => {
   }
 };
 
-export const getChartSuggestion = async (filePath: string): Promise<AnalyticsResponse> => {
+export const getSuggestions = async (requestId: string): Promise<{ suggestions: Suggestion[] }> => {
   try {
-    const response = await api.post(CSV_SUGGESTION_API_PATH, { filePath });
+    const response = await api.post(CSV_SUGGESTION_API_PATH, { request_id: requestId });
     return response.data;
   } catch (error: any) {
     throw new Error(`Chart suggestion API error: ${error.response?.status || error.message}`);

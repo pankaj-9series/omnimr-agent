@@ -11,7 +11,7 @@ if (!fs.existsSync(UPLOAD_DIR)) {
   fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 }
 
-export const handleFileUpload = (file: Express.Multer.File): UploadResponse => {
+export const handleFileUpload = (file: Express.Multer.File, requestId: string): UploadResponse => {
   try {
     // Validate file size
     if (file.size > MAX_FILE_SIZE) {
@@ -23,10 +23,8 @@ export const handleFileUpload = (file: Express.Multer.File): UploadResponse => {
       throw new Error('Only CSV files are allowed');
     }
 
-    // Generate unique filename
-    const timestamp = Date.now();
-    const sanitizedName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
-    const fileName = `${timestamp}_${sanitizedName}`;
+    // Use requestId as part of the filename
+    const fileName = `${requestId}_${file.originalname}`;
     const filePath = path.join(UPLOAD_DIR, fileName);
 
     // Save file
@@ -45,39 +43,36 @@ export const handleFileUpload = (file: Express.Multer.File): UploadResponse => {
   }
 };
 
-export const validateFilePath = (filePath: string): boolean => {
-  try {
-    // Check if file exists
-    if (!fs.existsSync(filePath)) {
-      return false;
-    }
+export const getFilePathFromRequestId = (requestId: string): string => {
+  // Assuming a simple mapping: requestId_originalFileName.csv
+  // This will require knowing the original file name, which is currently not passed around consistently.
+  // For now, let's assume the `filePath` returned from upload is what's stored and passed.
+  // A more robust solution would involve a server-side map (e.g., Redis, simple JSON file) or a more consistent naming convention.
+  // For this exercise, let's modify `validateFilePath` and `readCsvFileContent` to accept requestId and derive the path.
 
-    // Check if it's within the upload directory (security check)
-    const resolvedPath = path.resolve(filePath);
-    const resolvedUploadDir = path.resolve(UPLOAD_DIR);
-    
-    if (!resolvedPath.startsWith(resolvedUploadDir)) {
-      return false;
-    }
-
-    // Check if it's a CSV file
-    if (!filePath.endsWith('.csv')) {
-      return false;
-    }
-
-    return true;
-  } catch (error) {
-    return false;
-  }
+  // For simplicity and given current `uploadFile` returns `filePath`, we'll need to assume `filePath` is passed.
+  // This function will need refinement if `requestId` is the ONLY identifier.
+  return path.join(UPLOAD_DIR, `${requestId}_*.csv`); // This is a placeholder and needs real filename
 };
 
-export const readCsvFileContent = (filePath: string): string => {
+export const validateFileRequest = (requestId: string): string => {
+  // In a real app, this would involve looking up requestId in a database/store
+  // to get the actual filePath. For this example, we assume a simple filename pattern.
+  const filesInUploadDir = fs.readdirSync(UPLOAD_DIR);
+  const matchingFiles = filesInUploadDir.filter(f => f.startsWith(requestId + '_') && f.endsWith('.csv'));
+
+  if (matchingFiles.length === 0) {
+    throw new Error(`No CSV file found for request ID: ${requestId}`);
+  }
+  // Assuming only one file per requestId for simplicity
+  return path.join(UPLOAD_DIR, matchingFiles[0]);
+};
+
+export const readCsvFileContent = (requestId: string): string => {
   try {
-    if (!validateFilePath(filePath)) {
-      throw new Error('Invalid file path or not a CSV file');
-    }
+    const filePath = validateFileRequest(requestId);
     return fs.readFileSync(filePath, 'utf-8');
   } catch (error) {
-    throw new Error(`Error reading CSV file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(`Error reading CSV file for request ID ${requestId}: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 };

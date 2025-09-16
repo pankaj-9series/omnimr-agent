@@ -2,42 +2,37 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { processSingleMessage, processConversation } from '@/lib/services/agentService';
 import { ChatRequest, ConversationRequest, ApiResponse, ApiError } from '@/lib/types';
-import { readCsvFileContent, validateFilePath } from '@/lib/services/fileService';
+import { readCsvFileContent, validateFileRequest } from '@/lib/services/fileService';
 import { parse } from 'csv-parse/sync';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { message, filePath, messages }: ChatRequest & ConversationRequest = body;
+    const { message, request_id: requestId, messages }: ChatRequest & ConversationRequest = body;
 
-    // Handle single message chat
     if (!message) {
       return NextResponse.json({
         error: "Message is required",
         example: { 
           message: "Hello, how are you?",
-          filePath: "/path/to/uploaded/file.csv (optional)"
+          request_id: "your_unique_request_id (optional)"
         }
       } as ApiError, { status: 400 });
     }
     
-    // Handle single message
     if (message) {
-
-      // If filePath is provided, enhance the message with CSV context
       let enhancedMessage = message;
-      if (filePath) {
-        if (!validateFilePath(filePath)) {
-          return NextResponse.json({
-            error: "Invalid file path",
-            message: "The provided file path is invalid or not a CSV file.",
-            filePath: filePath
-          } as ApiError, { status: 400 });
+      if (requestId) {
+        try {
+          validateFileRequest(requestId); // Ensure file exists for the requestId
+          const csvContent = readCsvFileContent(requestId);
+          const records = parse(csvContent, { columns: true, skip_empty_lines: true });
+          const csvJson = JSON.stringify(records.slice(0,3));
+          enhancedMessage = `${message}\n\nPlease refer to the following CSV data in JSON format: ${csvJson}`;
+        } catch (fileError) {
+          console.warn(`Could not load CSV for request ID ${requestId}:`, fileError);
+          // Optionally return an error, but for chat, we might proceed without CSV context
         }
-        const csvContent = readCsvFileContent(filePath);
-        const records = parse(csvContent, { columns: true, skip_empty_lines: true });
-        const csvJson = JSON.stringify(records.slice(0,3));
-        enhancedMessage = `${message}\n\nPlease refer to the following CSV data in JSON format: ${csvJson}`;
       }
 
       const responseText = await processSingleMessage(enhancedMessage);
@@ -51,7 +46,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(response);
     }
 
-    // Handle conversation
     if (messages) {
       if (!messages || !Array.isArray(messages) || messages.length === 0) {
         return NextResponse.json({

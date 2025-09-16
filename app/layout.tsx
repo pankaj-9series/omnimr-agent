@@ -4,6 +4,7 @@ import Header from '../components/Header'
 import { AppContextProvider, useAppContext } from '../lib/context/AppContext'
 import React from 'react'
 import { usePathname } from 'next/navigation'
+import Head from 'next/head';
 
 export default function RootLayout({
   children,
@@ -12,6 +13,9 @@ export default function RootLayout({
 }) {
   return (
     <AppContextProvider>
+      <Head>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+      </Head>
       <LayoutContent>{children}</LayoutContent>
     </AppContextProvider>
   )
