@@ -34,12 +34,12 @@ const WorkflowConversationScreen: React.FC = () => {
         .then(response => {
           const cleanedResponse = response.suggestions.replace(/```json\n|```/g, '').trim();
           const parsedSuggestion = JSON.parse(cleanedResponse);
-          setSuggestions([parsedSuggestion]); 
+          setSuggestions([parsedSuggestion]);
         })
         .catch(error => console.error("Failed to re-fetch suggestions:", error))
-        .finally(() => setIsSuggestionsLoading(false)); 
+        .finally(() => setIsSuggestionsLoading(false));
     }
-  }, [requestId, isSuggestionsLoading, setSuggestions, setSelectedSuggestionIndex, suggestions.length]);
+  }, [requestId, isSuggestionsLoading, setSuggestions]);
 
   const handleSendMessage = async (messageObject: Suggestion, index: number) => { 
     if (isLoading || !requestId) return; 
