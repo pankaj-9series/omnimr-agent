@@ -1,51 +1,41 @@
 import { ApiResponse, AnalyticsResponse, UploadResponse } from '../types';
-
-const API_BASE_URL = '/api';
+import api from '../api';
+import {
+  CHAT_API_PATH,
+  CSV_UPLOAD_API_PATH,
+  CSV_SUGGESTION_API_PATH,
+} from '../constants/api';
 
 export const chat = async (message: string, filePath?: string): Promise<ApiResponse> => {
-  const response = await fetch(`${API_BASE_URL}/chat`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ message, filePath }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Chat API error: ${response.status}`);
+  try {
+    const response = await api.post(CHAT_API_PATH, { message, filePath });
+    return response.data;
+  } catch (error: any) {
+    throw new Error(`Chat API error: ${error.response?.status || error.message}`);
   }
-
-  return response.json();
 };
 
 export const uploadCSV = async (file: File): Promise<UploadResponse> => {
   const formData = new FormData();
   formData.append('csvFile', file);
 
-  const response = await fetch(`${API_BASE_URL}/csv/upload`, {
-    method: 'POST',
-    body: formData,
-  });
-
-  if (!response.ok) {
-    throw new Error(`Upload API error: ${response.status}`);
+  try {
+    const response = await api.post(CSV_UPLOAD_API_PATH, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  } catch (error: any) {
+    throw new Error(`Upload API error: ${error.response?.status || error.message}`);
   }
-
-  return response.json();
 };
 
 export const getChartSuggestion = async (filePath: string): Promise<AnalyticsResponse> => {
-  const response = await fetch(`${API_BASE_URL}/csv/suggestion`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ filePath }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Chart suggestion API error: ${response.status}`);
+  try {
+    const response = await api.post(CSV_SUGGESTION_API_PATH, { filePath });
+    return response.data;
+  } catch (error: any) {
+    throw new Error(`Chart suggestion API error: ${error.response?.status || error.message}`);
   }
-
-  return response.json();
 };
