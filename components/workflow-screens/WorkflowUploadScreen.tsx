@@ -94,26 +94,28 @@ const WorkflowUploadScreen: React.FC = () => {
               <p className="mt-4 text-gray-600">Uploading and processing your file...</p>
             </div>
           ) : (
-            <div className="flex flex-col items-center">
-              <UploadIcon className="w-16 h-16 text-gray-400 mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                Drop your CSV file here
-              </h3>
-              <p className="text-gray-600 mb-6">
-                or click to browse and select a file
-              </p>
-              <input
-                type="file"
-                accept=".csv"
-                onChange={handleFileInput}
-                className="hidden"
-                id="file-upload"
-              />
-              <label htmlFor="file-upload" className="cursor-pointer">
-                <Button>
-                  Choose File
-                </Button>
-              </label>
+            <div className="relative z-0">
+              <div className="flex flex-col items-center">
+                <UploadIcon className="w-16 h-16 text-gray-400 mb-4" />
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  Drop your CSV file here
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  or click to browse and select a file
+                </p>
+                <label htmlFor="file-upload" className="cursor-pointer">
+                  <Button>
+                    Choose File
+                  </Button>
+                </label>
+              </div>
+                <input
+                  type="file"
+                  accept=".csv"
+                  onChange={handleFileInput}
+                  className="opacity-0 absolute top-0 left-0 w-full h-full z-99"
+                  id="file-upload"
+                />
             </div>
           )}
         </div>
