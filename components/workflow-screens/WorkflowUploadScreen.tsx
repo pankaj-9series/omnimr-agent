@@ -11,7 +11,7 @@ import DocumentTextIcon from '@/components/icons/DocumentTextIcon';
 import CheckIcon from '@/components/icons/CheckIcon';
 import DownloadIcon from '@/components/icons/DownloadIcon';
 import { useAppContext } from '@/lib/context/AppContext';
-import { uploadFile, getSuggestions } from '@/lib/services/apiService';
+import { uploadFile } from '@/lib/services/apiService';
 import { SAMPLE_CSV_DATA } from '@/lib/constants';
 
 const generateUniqueId = (): string => {
@@ -66,7 +66,7 @@ interface FileDetails {
 }
 
 const WorkflowUploadScreen: React.FC = () => {
-  const { handleUploadSuccess: onUploadSuccess, setIsSuggestionsLoading, setSuggestions } = useAppContext();
+  const { handleUploadSuccess: onUploadSuccess } = useAppContext();
   const [fileDetails, setFileDetails] = useState<FileDetails | null>(null);
   const [fullData, setFullData] = useState<ParsedCSVData | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -111,11 +111,7 @@ const WorkflowUploadScreen: React.FC = () => {
             onUploadSuccess(parsedData, requestId); // Call onUploadSuccess immediately
             
             // Fetch suggestions in background
-            setIsSuggestionsLoading(true);
-            getSuggestions(requestId)
-                .then(response => setSuggestions(response.suggestions || []))
-                .catch(error => console.error("Failed to get suggestions:", error))
-                .finally(() => setIsSuggestionsLoading(false));
+            
         } catch (error) {
             console.error("Upload failed:", error);
             alert(`File upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -158,7 +154,7 @@ const WorkflowUploadScreen: React.FC = () => {
     } else {
         alert("Please drop a single CSV file.");
     }
-  }, [onUploadSuccess, setIsSuggestionsLoading, setSuggestions]); // Added dependencies
+  }, [onUploadSuccess]); // Added dependencies
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -191,11 +187,7 @@ const WorkflowUploadScreen: React.FC = () => {
         onUploadSuccess(parsedData, requestId); // Call onUploadSuccess immediately
         
         // Fetch suggestions in background
-        setIsSuggestionsLoading(true);
-        getSuggestions(requestId)
-            .then(response => setSuggestions(response.suggestions || []))
-            .catch(error => console.error("Sample data upload failed:", error))
-            .finally(() => setIsSuggestionsLoading(false));
+        
     } catch (error) {
         console.error("Sample data upload failed:", error);
         alert(`Sample data upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
