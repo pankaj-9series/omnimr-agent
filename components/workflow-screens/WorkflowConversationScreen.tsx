@@ -32,7 +32,7 @@ const WorkflowConversationScreen: React.FC = () => {
       setIsSuggestionsLoading(true);
       getSuggestions(requestId)
         .then(response => {
-          const cleanedResponse = response.suggestions.replace(/```json\n|```/g, '').trim();
+          const cleanedResponse = response.response.replace(/```json\n|```/g, '').trim();
           const parsedSuggestion = JSON.parse(cleanedResponse);
           setSuggestions([parsedSuggestion]);
         })

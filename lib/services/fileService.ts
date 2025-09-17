@@ -76,3 +76,20 @@ export const readCsvFileContent = (requestId: string): string => {
     throw new Error(`Error reading CSV file for request ID ${requestId}: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 };
+
+export const getSummarizedCsvContent = (requestId: string, numRows: number = 3): string => {
+  try {
+    const fullCsvContent = readCsvFileContent(requestId);
+    const lines = fullCsvContent.trim().split(/\r\n|\n/);
+    if (lines.length === 0) {
+      return "";
+    }
+
+    const headers = lines[0];
+    const dataRows = lines.slice(1, numRows + 1);
+
+    return [headers, ...dataRows].join('\n');
+  } catch (error) {
+    throw new Error(`Error getting summarized CSV content for request ID ${requestId}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};

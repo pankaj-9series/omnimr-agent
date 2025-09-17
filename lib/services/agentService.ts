@@ -3,7 +3,7 @@ import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { HumanMessage, AIMessage } from "@langchain/core/messages";
 import { StateGraph, MessagesAnnotation } from "@langchain/langgraph";
 import { AgentConfig } from '../types';
-import { readCsvFileContent } from "./fileService"; // Import readCsvFileContent
+import { readCsvFileContent, getSummarizedCsvContent } from "./fileService"; // Import readCsvFileContent
 
 // Configuration
 const config = {
@@ -103,48 +103,50 @@ export const processConversation = async (messages: string[]): Promise<{
 export const getChartRecommendationWithData = async (requestId: string): Promise<string> => {
   try {
     console.log(`Getting chart recommendation with data for request ID: ${requestId}`);
-    const csvContent = readCsvFileContent(requestId);
+    const summarizedCsvContent = getSummarizedCsvContent(requestId, 3); // Get headers and first 3 rows
+    console.log('summarizedCsvContent: ', summarizedCsvContent);
+    const promptMessage = new HumanMessage(`
+      Analyze the following CSV data and provide a complete chart solution:
+      
+      <csv_data>
+      ${summarizedCsvContent}
+      </csv_data>
+      
+      1. Recommend the BEST chart type for this data (BAR_CHART, LINE_CHART, SCATTER_CHART, or COMPOSED_CHART)
+      2. Automatically select the most meaningful X and Y axes 
+      3. Generate the complete recharts.js configuration with actual processed data
+      4. Explain why this chart type and axes were chosen
+      
+      Return a JSON response with this structure:
+      {
+        "recommendation": "Bar chart showing revenue by region",
+        "reasoning": "Bar charts are ideal for comparing categorical data. Revenue by region shows clear performance differences across geographic areas.",
+        "chartConfig": {
+          "type": "BAR_CHART",
+          "data": {
+            "labels": ["North", "South", "East", "West"],
+            "datasets": [{
+              "label": "Revenue",
+              "data": [45000, 52000, 48000, 61000],
+              "backgroundColor": "#36A2EB"
+            }]
+          },
+          "options": {
+            "responsive": true,
+            "plugins": {
+              "title": { "display": true, "text": "Revenue by Region" }
+            }
+          }
+        }
+      }
+      
+      Make sure the chart data is aggregated and ready to display immediately.
+      `)
 
     const result = await agentApp.invoke({
-      messages: [new HumanMessage(`
-Analyze the following CSV data and provide a complete chart solution:
-
-<csv_data>
-${csvContent}
-</csv_data>
-
-1. Recommend the BEST chart type for this data (line, bar, pie, or scatter)
-2. Automatically select the most meaningful X and Y axes 
-3. Generate the complete Chart.js configuration with actual processed data
-4. Explain why this chart type and axes were chosen
-
-Return a JSON response with this structure:
-{
-  "recommendation": "Bar chart showing revenue by region",
-  "reasoning": "Bar charts are ideal for comparing categorical data. Revenue by region shows clear performance differences across geographic areas.",
-  "chartConfig": {
-    "type": "bar",
-    "data": {
-      "labels": ["North", "South", "East", "West"],
-      "datasets": [{
-        "label": "Revenue",
-        "data": [45000, 52000, 48000, 61000],
-        "backgroundColor": "#36A2EB"
-      }]
-    },
-    "options": {
-      "responsive": true,
-      "plugins": {
-        "title": { "display": true, "text": "Revenue by Region" }
-      }
-    }
-  }
-}
-
-Make sure the chart data is aggregated and ready to display immediately.
-`)]
+      messages: [promptMessage]
     });
-    
+
     const lastMessage = result.messages[result.messages.length - 1];
     return typeof lastMessage.content === 'string' ? lastMessage.content : JSON.stringify(lastMessage.content);
   } catch (error) {
