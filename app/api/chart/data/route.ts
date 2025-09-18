@@ -1,43 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GetChartDataPayload } from '@/lib/services/chartService'; // Keep types from chartService
-import { ApiError } from '@/lib/types';
+import { GetChartDataPayload } from '@/lib/services/chartService';
+import { readCsvFileContent } from '@/lib/services/fileService';
+import { runChartOps, Row } from '@/lib/utils/chartProcessingService'; // Import runChartOps and Row
+import { parse } from 'csv-parse/sync'; // For CSV parsing
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.omnimr.staging9.com/api/v1'; // External API base URL
-const CHART_DATA_ENDPOINT = `${API_BASE_URL}/get/chart/data/`;
-
-export async function POST(request: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
-    const body: GetChartDataPayload = await request.json();
+    const payload: GetChartDataPayload = await req.json();
+    const { request_id, chart } = payload;
 
-    if (!body || !body.chart || !body.request_id) {
-      return NextResponse.json({
-        error: "Invalid payload",
-        message: "Chart configuration and request ID are required.",
-      } as ApiError, { status: 400 });
+    if (!request_id || !chart || !chart.ops_plan) {
+      return NextResponse.json({ error: "Missing request_id or chart operations plan." }, { status: 400 });
     }
 
-    // Make the external API call directly from this Next.js API route
-    const externalApiResponse = await fetch(CHART_DATA_ENDPOINT, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'accept': 'application/json',
-      },
-      body: JSON.stringify(body), // Forward the entire payload
+    // Read the CSV content
+    const csvContent = readCsvFileContent(request_id);
+    if (!csvContent) {
+      return NextResponse.json({ error: "CSV file not found or empty." }, { status: 404 });
+    }
+
+    // Parse CSV content using csv-parse/sync
+    const records = parse(csvContent, {
+      columns: true, // Treat the first row as column headers
+      skip_empty_lines: true,
+      cast: true, // Attempt to cast values to appropriate types (numbers, booleans, etc.)
     });
 
-    if (!externalApiResponse.ok) {
-      const errorText = await externalApiResponse.text();
-      throw new Error(`External API error! status: ${externalApiResponse.status}, ${errorText}`);
-    }
+    // Run chart operations on the parsed data
+    const processedChartData = runChartOps(records as Row[], chart.ops_plan);
 
-    const data = await externalApiResponse.json();
-    return NextResponse.json(data);
+    return NextResponse.json(processedChartData);
   } catch (error) {
-    console.error("Error fetching chart data from external API:", error);
-    return NextResponse.json({
-      error: "Failed to fetch chart data",
-      message: error instanceof Error ? error.message : "Unknown error"
-    } as ApiError, { status: 500 });
+    console.error("Error in chart data API route:", error);
+    return NextResponse.json({ error: "Failed to process chart data." }, { status: 500 });
   }
 }

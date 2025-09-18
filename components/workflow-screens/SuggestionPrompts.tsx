@@ -46,7 +46,7 @@ const SuggestionPrompts: React.FC<SuggestionPromptsProps> = React.memo(({
             className={buttonClassName}
             disabled={isLoading} // Disable button if overall process is loading
           >
-            <p className="text-sm font-semibold text-slate-800">{suggestion.chartConfig.options.plugins.title.text || suggestion.recommendation}</p>
+            <p className="text-sm font-semibold text-slate-800">{suggestion.chartConfig?.options?.plugins?.title?.text || suggestion.recommendation}</p>
             <p className="text-xs text-slate-600 mt-1">{suggestion.reasoning}</p>
           </button>
         );

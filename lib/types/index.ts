@@ -1,3 +1,7 @@
+import { z } from 'zod'; // Import z
+import { ZSuggestionsResponse, ZSuggestionChartConfig, ZChartJsChartConfig } from '@/lib/schemas/chartSchemas'; // Directly import ZChartJsChartConfig
+// RechartsChartConfig is defined here now
+
 export interface Step {
   name: string;
   description: string;
@@ -15,9 +19,11 @@ export interface Project {
   fileCount: number;
 }
 
-export interface ChartConfig {
-  chartTitle?: string;
-  xAxisKey?: string;
+export interface ChartJsChartConfig extends z.infer<typeof ZChartJsChartConfig> {}
+
+export interface RechartsChartConfig {
+  chartTitle: string;
+  xAxisKey: string;
   yAxisKey?: string; // For scatter charts that might define a single yAxisKey directly
   yAxisKeys?: string[] | { // Optional, can be string[] for simple charts or object for composed
     bar?: string[];
@@ -44,13 +50,14 @@ export interface OpsPlanOperation {
   op: string;
   by?: string[];
   aggs?: OpsPlanAggregate[];
+  where?: Array<{ col: string; op: string; val?: any }>; // Made val optional here
 }
 
 export interface OpsPlan {
   plan_version: string;
   x: string;
   y: Array<{ field: string; fn: string }>;
-  seriesBy: string | null;
+  seriesBy?: string | null; // Made optional and allow null
   output_format: string;
   ops: OpsPlanOperation[];
 }
@@ -60,7 +67,7 @@ export interface Slide {
   chartType: string;
   title: string;
   insights: string[];
-  chartConfig?: ChartConfig;
+  chartConfig?: RechartsChartConfig; // Use RechartsChartConfig
   chartData?: any[];
   colorPalette?: string[];
 }
@@ -71,7 +78,7 @@ export interface ChatMessage {
   text: string;
   isAwaitingConfirmation?: boolean;
   slideData?: Omit<Slide, 'slideNumber'>;
-  config: ChartConfig;
+  config: ChartJsChartConfig; // Use ChartJsChartConfig here
   ops_plan: OpsPlan;
 }
 
@@ -110,11 +117,8 @@ export interface GithubRepo {
 export interface Suggestion {
   recommendation: string;
   reasoning: string;
-  chartConfig: {
-    type: string;
-    data: any;
-    options: any;
-  };
+  chartConfig: ChartJsChartConfig; // Use ChartJsChartConfig here
+  opsPlan?: OpsPlan; // Added optional OpsPlan
 }
 
 // API Types
@@ -149,7 +153,9 @@ export interface HealthResponse {
 
 export interface AnalyticsResponse {
   success: boolean;
-  response: string;
+  response: { // Correctly define response as an object
+    suggestions: z.infer<typeof ZSuggestionsResponse>['suggestions']; // Access the suggestions array within this object
+  };
   timestamp: string;
 }
 

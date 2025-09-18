@@ -1,10 +1,10 @@
 import React from 'react';
 import { ComposedChart as RechartsComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area } from 'recharts';
-import { ChartConfig } from '@/lib/types';
+import { RechartsChartConfig } from '@/lib/types'; // Changed ChartConfig to RechartsChartConfig
 
 interface ComposedChartProps {
   data: any[];
-  config?: ChartConfig;
+  config?: RechartsChartConfig; // Changed ChartConfig to RechartsChartConfig
   colorPalette?: string[];
 }
 
@@ -39,7 +39,7 @@ const ComposedChart: React.FC<ComposedChartProps> = ({ data, config, colorPalett
         <Legend />
         
         {areaKeys && areaKeys.map((key) => (
-          <Area key={key} type="monotone" dataKey={key} fill={getColor()} stroke={getColor()} />
+          <Area key={key} dataKey={key} fill={getColor()} stroke={getColor()} />
         ))}
 
         {barKeys && barKeys.map((key) => (
@@ -47,7 +47,7 @@ const ComposedChart: React.FC<ComposedChartProps> = ({ data, config, colorPalett
         ))}
 
         {lineKeys && lineKeys.map((key) => (
-          <Line key={key} type="monotone" dataKey={key} stroke={getColor()} activeDot={{ r: 8 }} />
+          <Line key={key} dataKey={key} stroke={getColor()} activeDot={{ r: 8 }} />
         ))}
       </RechartsComposedChart>
     </ResponsiveContainer>

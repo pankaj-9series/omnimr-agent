@@ -1,4 +1,4 @@
-import { UploadResponse, Suggestion } from '../types';
+import { UploadResponse, Suggestion, AnalyticsResponse } from '../types'; // Import AnalyticsResponse
 import api from '../api';
 import {
   CSV_UPLOAD_API_PATH,
@@ -22,7 +22,7 @@ export const uploadFile = async (requestId: string, file: File): Promise<UploadR
   }
 };
 
-export const getSuggestions = async (requestId: string): Promise<{ suggestions: Suggestion[] }> => {
+export const getSuggestions = async (requestId: string): Promise<AnalyticsResponse> => {
   try {
     const response = await api.post(CSV_SUGGESTION_API_PATH, { request_id: requestId });
     return response.data;

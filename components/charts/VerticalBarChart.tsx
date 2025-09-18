@@ -1,10 +1,10 @@
 import React from 'react';
 import { BarChart, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Bar } from 'recharts';
-import { ChartConfig } from '@/lib/types';
+import { RechartsChartConfig } from '@/lib/types'; // Changed ChartConfig to RechartsChartConfig
 
 interface VerticalBarChartProps {
   data: any[];
-  config?: ChartConfig;
+  config?: RechartsChartConfig; // Changed ChartConfig to RechartsChartConfig
   colorPalette?: string[];
 }
 

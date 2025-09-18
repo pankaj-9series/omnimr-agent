@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Slide, Suggestion } from '@/lib/types';
+import { ChartJsChartConfig, Slide, Suggestion, OpsPlan, RechartsChartConfig } from '@/lib/types'; // Import RechartsChartConfig
 import Spinner from '@/components/ui/Spinner';
 import { useAppContext } from '@/lib/context/AppContext';
 import { CHART_COLOR_PALETTES } from '@/lib/constants';
 import ChartWrapper from '@/components/charts/ChartWrapper';
 import { getSuggestions } from '@/lib/services/apiService';
 import SuggestionPrompts from '@/components/workflow-screens/SuggestionPrompts';
+import { getChartData, ChartRequestPayload, GetChartDataPayload } from '@/lib/services/chartService';
 
 const WorkflowConversationScreen: React.FC = () => {
   const {
@@ -32,75 +33,88 @@ const WorkflowConversationScreen: React.FC = () => {
       setIsSuggestionsLoading(true);
       getSuggestions(requestId)
         .then(response => {
-          const cleanedResponse = response.response.replace(/```json\n|```/g, '').trim();
-          const parsedSuggestion = JSON.parse(cleanedResponse);
-          setSuggestions([parsedSuggestion]);
+          // response.response is now an array of suggestions
+          setSuggestions(response.response.suggestions);
         })
         .catch(error => console.error("Failed to re-fetch suggestions:", error))
         .finally(() => setIsSuggestionsLoading(false));
     }
   }, [requestId, setSuggestions]);
 
-  const handleSendMessage = async (messageObject: Suggestion, index: number) => { 
-    if (isLoading || !requestId) return; 
+  const handleSendMessage = async (messageObject: Suggestion, index: number) => {
+    if (isLoading || !requestId) return;
 
-    setIsLoading(true); 
-    setCurrentChartPreview(null); 
-    setSelectedSuggestionIndex(index); 
+    setIsLoading(true);
+    setCurrentChartPreview(null);
+    setSelectedSuggestionIndex(index);
 
     try {
-      // Transform Chart.js config to Recharts compatible format
-      const rechartsChartConfig: any = {
-        chartTitle: messageObject.chartConfig.options.plugins.title.text || messageObject.recommendation,
+      const { chartConfig: chartJsChartConfig, recommendation, reasoning, opsPlan } = messageObject;
+
+      if (!requestId || !opsPlan) {
+        console.error("Missing requestId or opsPlan for chart data API call.");
+        setIsLoading(false);
+        return;
+      }
+
+      const rechartsChartConfig: RechartsChartConfig = {
+        chartTitle: chartJsChartConfig.options?.plugins?.title?.text || recommendation || '',
+        xAxisKey: opsPlan.x, // Use opsPlan.x for the exact data key
+        yAxisKeys: opsPlan.y.map(y => y.field),
+        primaryYAxisKey: opsPlan.y[0]?.field, // Use opsPlan.y[0].field for primary Y-axis
+        colors: {
+          bar: chartJsChartConfig.data.datasets[0]?.backgroundColor ? [{ key: chartJsChartConfig.data.datasets[0].label, color: chartJsChartConfig.data.datasets[0].backgroundColor }] : undefined,
+          line: chartJsChartConfig.data.datasets[0]?.borderColor ? [{ key: chartJsChartConfig.data.datasets[0].label, color: chartJsChartConfig.data.datasets[0].borderColor }] : undefined,
+        },
+        xAxisLabel: chartJsChartConfig.options?.scales?.x?.title?.text,
+        yAxisLabel: chartJsChartConfig.options?.scales?.y?.title?.text || opsPlan.y[0]?.field, // Use opsPlan.y[0].field as fallback for label
       };
-      const rechartsChartData: any[] = [];
-      const chartJsConfig = messageObject.chartConfig;
 
-      // For Bar Charts
-      if (chartJsConfig.type === 'bar') {
-        rechartsChartConfig.xAxisKey = chartJsConfig.data.labels[0]; // Assuming first label is x-axis
-        rechartsChartConfig.primaryYAxisKey = chartJsConfig.data.datasets[0].label; // Assuming first dataset label is primary y-axis
-        rechartsChartConfig.xAxisLabel = chartJsConfig.options?.plugins?.title?.text;
-        rechartsChartConfig.yAxisLabel = chartJsConfig.data.datasets[0].label;
+      const chartRequestPayload: ChartRequestPayload = {
+        chart_type: chartJsChartConfig.type,
+        reasoning: reasoning,
+        config: rechartsChartConfig,
+        ops_plan: opsPlan,
+      };
 
-        chartJsConfig.data.labels.forEach((label: string, idx: number) => {
-          rechartsChartData.push({
-            [rechartsChartConfig.xAxisKey]: label,
-            [rechartsChartConfig.primaryYAxisKey]: chartJsConfig.data.datasets[0].data[idx],
+      const getChartDataPayload: GetChartDataPayload = {
+        chart: chartRequestPayload,
+        request_id: requestId,
+      };
+
+      const chartDataResponse = await getChartData(getChartDataPayload);
+
+      let transformedChartData: any[] = [];
+
+      if (chartDataResponse && Array.isArray(chartDataResponse) && chartDataResponse.length > 0) {
+        transformedChartData = chartDataResponse;
+      } else if (chartJsChartConfig.data.labels && chartJsChartConfig.data.labels.length > 0) {
+        console.warn("Chart data API returned unexpected format or empty data. Falling back to initial chartConfig.data:", chartDataResponse);
+        transformedChartData = chartJsChartConfig.data.labels.map((label: string, idx: number) => {
+          const dataPoint: { [key: string]: any } = { [rechartsChartConfig.xAxisKey || 'name']: label };
+          chartJsChartConfig.data.datasets.forEach((dataset: any) => {
+            // Use datasetType instead of type for consistency with Zod schema
+            if (dataset.datasetType === 'bar' || dataset.datasetType === 'line' || dataset.datasetType === 'area') {
+              dataPoint[dataset.label] = dataset.data[idx];
+            } else {
+              dataPoint[dataset.label] = dataset.data[idx]; // Default handling
+            }
           });
+          return dataPoint;
         });
-      } else if (chartJsConfig.type === 'line') {
-        // Similar transformation for line chart if needed, adjust based on your API's line chart response
-        rechartsChartConfig.xAxisKey = chartJsConfig.data.labels[0];
-        rechartsChartConfig.yAxisKeys = chartJsConfig.data.datasets.map((ds: any) => ds.label);
-        rechartsChartConfig.xAxisLabel = chartJsConfig.options?.plugins?.title?.text;
-        rechartsChartConfig.yAxisLabel = chartJsConfig.data.datasets[0].label;
-
-        chartJsConfig.data.labels.forEach((label: string, idx: number) => {
-          const dataPoint: any = { [rechartsChartConfig.xAxisKey]: label };
-          chartJsConfig.data.datasets.forEach((dataset: any) => {
-            dataPoint[dataset.label] = dataset.data[idx];
-          });
-          rechartsChartData.push(dataPoint);
-        });
-      } else if (chartJsConfig.type === 'scatter') {
-        // Assuming scatter data comes as { x: value, y: value }
-        rechartsChartConfig.xAxisKey = messageObject.chartConfig.options.scales.x.title.text; // Assuming x-axis title from options
-        rechartsChartConfig.yAxisKey = messageObject.chartConfig.options.scales.y.title.text; // Assuming y-axis title from options
-        rechartsChartConfig.xAxisLabel = rechartsChartConfig.xAxisKey;
-        rechartsChartConfig.yAxisLabel = rechartsChartConfig.yAxisKey;
-        rechartsChartData.push(...chartJsConfig.data.datasets[0].data.map((d: any) => ({ [rechartsChartConfig.xAxisKey]: d.x, [rechartsChartConfig.yAxisKey]: d.y })));
+      } else {
+        console.warn("Chart data API returned unexpected format or empty data, and no fallback labels available.", chartDataResponse);
+        transformedChartData = [];
       }
       
-      const newSlide: Omit<Slide, 'slideNumber'> = {
-        title: messageObject.chartConfig.options.plugins.title.text || messageObject.recommendation,
-        insights: [messageObject.reasoning],
-        chartType: messageObject.chartConfig.type.toUpperCase() + '_CHART', // e.g., 'BAR_CHART'
-        chartConfig: rechartsChartConfig,
-        chartData: rechartsChartData,
-        colorPalette: chartJsConfig.data.datasets[0].backgroundColor ? [chartJsConfig.data.datasets[0].backgroundColor] : CHART_COLOR_PALETTES.corporate, // Use first color or default
-      };
-      setCurrentChartPreview(newSlide); 
+      setCurrentChartPreview({
+        title: rechartsChartConfig.chartTitle,
+        insights: [reasoning],
+        chartType: chartJsChartConfig.type,
+        chartConfig: { ...rechartsChartConfig },
+        chartData: transformedChartData,
+        colorPalette: CHART_COLOR_PALETTES.corporate,
+      });
 
     } catch (error) {
       console.error("Failed to process chart data:", error);
@@ -111,9 +125,9 @@ const WorkflowConversationScreen: React.FC = () => {
   
   return (
     <div className="h-full flex lg:flex-row gap-6 relative w-full">
-     <div className="h-full bg-white p-4 rounded-lg shadow-sm w-1/4">
+     <div className="h-full bg-white p-4 rounded-lg shadow-sm w-1/4 overflow-y-auto">
         <h2 className="text-xl font-bold text-slate-900 mb-4">Suggested Analyses</h2>
-        <div className="flex-grow overflow-y-auto pr-2 h-full">
+        <div className="flex-grow pr-2">
           <SuggestionPrompts
             suggestions={suggestions}
             onSelect={handleSendMessage}

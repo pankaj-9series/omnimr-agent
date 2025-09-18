@@ -23,8 +23,8 @@ export const handleFileUpload = (file: Express.Multer.File, requestId: string): 
       throw new Error('Only CSV files are allowed');
     }
 
-    // Use requestId as part of the filename
-    const fileName = `${requestId}_${file.originalname}`;
+    // Use requestId as the filename
+    const fileName = `${requestId}.csv`;
     const filePath = path.join(UPLOAD_DIR, fileName);
 
     // Save file
@@ -44,22 +44,15 @@ export const handleFileUpload = (file: Express.Multer.File, requestId: string): 
 };
 
 export const getFilePathFromRequestId = (requestId: string): string => {
-  // Assuming a simple mapping: requestId_originalFileName.csv
-  // This will require knowing the original file name, which is currently not passed around consistently.
-  // For now, let's assume the `filePath` returned from upload is what's stored and passed.
-  // A more robust solution would involve a server-side map (e.g., Redis, simple JSON file) or a more consistent naming convention.
-  // For this exercise, let's modify `validateFilePath` and `readCsvFileContent` to accept requestId and derive the path.
-
-  // For simplicity and given current `uploadFile` returns `filePath`, we'll need to assume `filePath` is passed.
-  // This function will need refinement if `requestId` is the ONLY identifier.
-  return path.join(UPLOAD_DIR, `${requestId}_*.csv`); // This is a placeholder and needs real filename
+  // For now, assume the filePath is simply UPLOAD_DIR/requestId.csv
+  return path.join(UPLOAD_DIR, `${requestId}.csv`);
 };
 
 export const validateFileRequest = (requestId: string): string => {
   // In a real app, this would involve looking up requestId in a database/store
   // to get the actual filePath. For this example, we assume a simple filename pattern.
   const filesInUploadDir = fs.readdirSync(UPLOAD_DIR);
-  const matchingFiles = filesInUploadDir.filter(f => f.startsWith(requestId + '_') && f.endsWith('.csv'));
+  const matchingFiles = filesInUploadDir.filter(f => f === `${requestId}.csv`);
 
   if (matchingFiles.length === 0) {
     throw new Error(`No CSV file found for request ID: ${requestId}`);

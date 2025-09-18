@@ -1,7 +1,9 @@
 // app/api/csv/suggestion/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getChartRecommendationWithData } from '@/lib/services/agentService';
-import { ApiError, AnalyticsResponse } from '@/lib/types';
+import { ApiError } from '@/lib/types';
+import { z } from 'zod'; // Correct import for Zod
+import { ZSuggestionsResponse } from '@/lib/schemas/chartSchemas';
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,7 +14,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         error: "Request ID is required",
         message: "Please provide a request_id in the request body.",
-        example: { 
+        example: {
           request_id: "your_unique_request_id"
         }
       } as ApiError, { status: 400 });
@@ -20,9 +22,13 @@ export async function POST(request: NextRequest) {
 
     const suggestionResult = await getChartRecommendationWithData(requestId);
 
-    const response: AnalyticsResponse = {
+    const response: {
+      success: boolean;
+      response: z.infer<typeof ZSuggestionsResponse>; // Correct Zod infer usage
+      timestamp: string;
+    } = {
       success: true,
-      response: suggestionResult,
+      response: suggestionResult, // Access the suggestions array from the structured response
       timestamp: new Date().toISOString()
     };
 

@@ -1,10 +1,10 @@
 import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { ChartConfig } from '@/lib/types';
+import { RechartsChartConfig } from '@/lib/types'; // Changed ChartConfig to RechartsChartConfig
 
 interface TrendLineChartProps {
   data: any[];
-  config?: ChartConfig;
+  config?: RechartsChartConfig; // Changed ChartConfig to RechartsChartConfig
   colorPalette?: string[];
 }
 
@@ -32,7 +32,6 @@ const TrendLineChart: React.FC<TrendLineChartProps> = ({ data, config, colorPale
         {Array.isArray(yAxisKeys) && yAxisKeys.map((key, index) => (
           <Line
             key={key}
-            type="monotone"
             dataKey={key}
             stroke={defaultColors[index % defaultColors.length]}
             activeDot={{ r: 8 }}

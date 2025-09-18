@@ -1,19 +1,19 @@
 import React from 'react';
 import { ScatterChart as RechartsScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { ChartConfig } from '@/lib/types';
+import { RechartsChartConfig } from '@/lib/types';
 
 interface ScatterChartProps {
   data: any[];
-  config?: ChartConfig;
+  config?: RechartsChartConfig;
   colorPalette?: string[];
 }
 
 const ScatterChart: React.FC<ScatterChartProps> = ({ data, config, colorPalette }) => {
-  if (!data || data.length === 0 || !config || !config.xAxisKey || !config.yAxisKey) {
+  if (!data || data.length === 0 || !config || !config.xAxisKey || !config.primaryYAxisKey) {
     return null; // Render nothing if essential data or config is missing
   }
 
-  const { xAxisKey, yAxisKey, xAxisLabel, yAxisLabel } = config;
+  const { xAxisKey, primaryYAxisKey, xAxisLabel, yAxisLabel } = config;
   const defaultColor = colorPalette && colorPalette.length > 0 ? colorPalette[0] : '#8884d8';
 
   return (
@@ -24,8 +24,8 @@ const ScatterChart: React.FC<ScatterChartProps> = ({ data, config, colorPalette 
         }}
       >
         <CartesianGrid />
-        <XAxis type="number" dataKey={xAxisKey} name={xAxisLabel || xAxisKey} unit="" />
-        <YAxis type="number" dataKey={yAxisKey} name={yAxisLabel || yAxisKey} unit="" />
+        <XAxis dataKey={xAxisKey} name={xAxisLabel || xAxisKey} unit="" />
+        <YAxis dataKey={primaryYAxisKey} name={yAxisLabel || primaryYAxisKey} unit="" />
         <Tooltip cursor={{ strokeDasharray: '3 3' }} />
         <Scatter name={config.chartTitle || 'Data'} data={data} fill={defaultColor} />
       </RechartsScatterChart>

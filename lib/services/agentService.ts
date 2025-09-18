@@ -3,7 +3,9 @@ import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { HumanMessage, AIMessage } from "@langchain/core/messages";
 import { StateGraph, MessagesAnnotation } from "@langchain/langgraph";
 import { AgentConfig } from '../types';
-import { readCsvFileContent, getSummarizedCsvContent } from "./fileService"; // Import readCsvFileContent
+import { getSummarizedCsvContent } from "./fileService";
+import { ZSuggestionsResponse } from '../schemas/chartSchemas'; // Import the Zod schema
+import { z } from 'zod'; // Correct import for z
 
 // Configuration
 const config = {
@@ -27,21 +29,34 @@ const createModel = (): ChatGoogleGenerativeAI => {
 
 // Initialize the enhanced LangGraph agent with tools
 const createAgent = () => {
-  const model = createModel();
+  const model = createModel().withStructuredOutput(ZSuggestionsResponse, {
+    name: "extract" // Specify the function name as 'extract'
+  });
 
   // Define the function that calls the model
   const callModel = async (state: typeof MessagesAnnotation.State) => {
     const response = await model.invoke(state.messages);
-    return { messages: [response] };
+    let finalToolCalls = [{
+      name: "extract", // This must match the name used in withStructuredOutput
+      args: response as Record<string, any>,
+      id: `call_${Date.now()}` // Unique ID for the tool call
+    }];
+
+    // Construct a new AIMessage with empty content, ensuring tool_calls carries the structured output
+    const aiMessage = new AIMessage({
+      content: "", // Ensure content is a simple string for Langgraph's state
+      tool_calls: finalToolCalls,
+    });
+    return { messages: [aiMessage] };
   };
 
   // Define the function that determines whether to continue or not
   const shouldContinue = ({ messages }: typeof MessagesAnnotation.State) => {
-    const lastMessage = messages[messages.length - 1] as AIMessage;
-    
-    // If the LLM makes a tool call, route to the "tools" node
-    if (lastMessage.tool_calls?.length) {
-      console.log(`Agent wants to use ${lastMessage.tool_calls.length} tool(s)`);
+    const lastMessage = messages[messages.length - 1];
+
+    // If the last message is an AIMessage and explicitly has tool_calls, route to process them.
+    if (lastMessage instanceof AIMessage && lastMessage.tool_calls && lastMessage.tool_calls.length > 0) {
+      console.log(`Agent generated structured output with ${lastMessage.tool_calls.length} tool call(s).`);
       return "tools";
     }
     // Otherwise, end the conversation
@@ -100,55 +115,102 @@ export const processConversation = async (messages: string[]): Promise<{
   }
 };
 
-export const getChartRecommendationWithData = async (requestId: string): Promise<string> => {
+export const getChartRecommendationWithData = async (requestId: string): Promise<z.infer<typeof ZSuggestionsResponse>> => {
   try {
     console.log(`Getting chart recommendation with data for request ID: ${requestId}`);
     const summarizedCsvContent = getSummarizedCsvContent(requestId, 3); // Get headers and first 3 rows
-    console.log('summarizedCsvContent: ', summarizedCsvContent);
+    console.log(`summarizedCsvContent: ${summarizedCsvContent}`);
     const promptMessage = new HumanMessage(`
-      Analyze the following CSV data and provide a complete chart solution:
-      
-      <csv_data>
-      ${summarizedCsvContent}
-      </csv_data>
-      
-      1. Recommend the BEST chart type for this data (BAR_CHART, LINE_CHART, SCATTER_CHART, or COMPOSED_CHART)
-      2. Automatically select the most meaningful X and Y axes 
-      3. Generate the complete recharts.js configuration with actual processed data
-      4. Explain why this chart type and axes were chosen
-      
-      Return a JSON response with this structure:
-      {
-        "recommendation": "Bar chart showing revenue by region",
-        "reasoning": "Bar charts are ideal for comparing categorical data. Revenue by region shows clear performance differences across geographic areas.",
-        "chartConfig": {
-          "type": "BAR_CHART",
-          "data": {
-            "labels": ["North", "South", "East", "West"],
-            "datasets": [{
-              "label": "Revenue",
-              "data": [45000, 52000, 48000, 61000],
-              "backgroundColor": "#36A2EB"
-            }]
-          },
-          "options": {
-            "responsive": true,
-            "plugins": {
-              "title": { "display": true, "text": "Revenue by Region" }
-            }
-          }
-        }
-      }
-      
-      Make sure the chart data is aggregated and ready to display immediately.
-      `)
+# Expert Data Visualization Analyst System Prompt
+
+You are an **Expert Data Visualization Analyst**. Analyze any provided dataset and generate intelligent chart suggestions that reveal meaningful insights and patterns. Your output must be a JSON object with a 'suggestions' array, strictly conforming to the provided schema.
+
+## Available Chart Types
+
+• **BAR_CHART**: Categorical comparisons, rankings, group analysis
+• **LINE_CHART**: Trends, progressions, sequential relationships  
+• **SCATTER_CHART**: Correlations, two-variable relationships, outlier detection
+• **COMPOSED_CHART**: Multi-dimensional analysis combining line + bar + area
+
+## Your Analysis Process
+
+### 1. Data Examination
+• Review column names, data types, and value patterns
+• Identify categorical vs numerical variables
+• Spot potential relationships and grouping opportunities
+
+### 2. Insight Discovery
+• **Segmentation**: How do metrics vary across different groups?
+• **Relationships**: Which variables correlate or influence each other?
+• **Distributions**: What patterns exist in the data spread?
+• **Comparisons**: Which categories, groups, or time periods differ significantly?
+• **Trends**: Are there progressions, cycles, or directional changes?
+
+### 3. Chart Strategy
+• Match data characteristics to optimal chart types
+• Select meaningful variable combinations
+• Choose groupings that reveal clear patterns
+• Design titles that communicate the key insight
+
+## Requirements
+
+### Quantity & Diversity
+• **Generate minimum 10 chart suggestions**
+• **Multiple chart types** - don't overuse any single type
+• **Varied data combinations** - explore different variable pairs/groups
+• **Different analysis angles** - segmentation, correlation, comparison, trends
+
+### Quality Standards
+• **Clear, insight-driven titles** - not just "Age vs Income"
+• **Smart color coding** - enhance readability and meaning
+• **Proper axis labels** - descriptive and clear
+• **Valid data mapping** - only use columns that exist in the dataset
+• **Business reasoning** - explain why each chart provides value
+
+### Configuration Accuracy
+• **For ALL Chart Suggestions: When data transformation (filtering, grouping, aggregation) is required to prepare the data for the chart, the \`opsPlan\` MUST include an \`ops\` array with the necessary \`filter\`, \`groupby\`, and \`aggregate\` operations.** This is crucial for producing numerical data for charting from raw or categorical fields.
+• **BAR_CHART**: Choose categorical grouping variables and numerical metrics. If the Y-axis metric is categorical, use an \`ops\` operation (e.g., \`groupby\` and \`aggregate\` with \`count\`) to produce numerical values.
+• **LINE_CHART**: Select sequential/ordered variables for meaningful progressions. If aggregation is needed over time, include \`ops\` for time series resampling or other aggregations.
+• **SCATTER_CHART**: Pick variable pairs with potential relationships. If a measure needs aggregation before plotting, include \`ops\` (e.g., \`mean\`, \`sum\`).
+• **COMPOSED_CHART**: Combine related metrics that tell a comprehensive story. Always include \`ops\` for any required aggregations or filters for constituent charts.
+
+### Example OpsPlan for Bar Chart Aggregation:
+\`\`\`json
+{
+  \"plan_version\": \"1.0\",
+  \"x\": \"region\",
+  \"y\": [{\"field\": \"customer_id\", \"fn\": \"count\"}],
+  \"seriesBy\": null,
+  \"output_format\": \"wide\",
+  \"ops\": [
+    {\"op\": \"groupby\", \"by\": [\"region\"]},
+    {\"op\": \"aggregate\", \"aggs\": [{\"fn\": \"count\", \"col\": \"customer_id\"}]}
+  ]
+}
+\`\`\`
+
+## Data to Analyze
+<csv_data>
+${summarizedCsvContent}
+</csv_data>
+              `);
 
     const result = await agentApp.invoke({
       messages: [promptMessage]
     });
 
     const lastMessage = result.messages[result.messages.length - 1];
-    return typeof lastMessage.content === 'string' ? lastMessage.content : JSON.stringify(lastMessage.content);
+
+    // Explicitly extract structured data from tool_calls args
+    const toolCall = (lastMessage as AIMessage).tool_calls?.[0];
+    if (toolCall && toolCall.name === 'extract' && toolCall.args) {
+      const structuredOutput = ZSuggestionsResponse.parse(toolCall.args);
+      return structuredOutput;
+    }
+
+    // Fallback if structured output is not in tool_calls (this path should be rare now)
+    throw new Error("LLM did not return structured output in tool_calls as expected.");
+
   } catch (error) {
     console.error("Error getting chart recommendation with data:", error);
     throw error;
