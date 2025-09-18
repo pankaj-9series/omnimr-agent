@@ -29,36 +29,28 @@ const createModel = (): ChatGoogleGenerativeAI => {
 
 // Initialize the enhanced LangGraph agent with tools
 const createAgent = () => {
-  const model = createModel().withStructuredOutput(ZSuggestionsResponse, {
-    name: "extract" // Specify the function name as 'extract'
-  });
+  const model = createModel().withStructuredOutput(ZSuggestionsResponse);
 
   // Define the function that calls the model
   const callModel = async (state: typeof MessagesAnnotation.State) => {
-    const response = await model.invoke(state.messages);
-    let finalToolCalls = [{
-      name: "extract", // This must match the name used in withStructuredOutput
-      args: response as Record<string, any>,
-      id: `call_${Date.now()}` // Unique ID for the tool call
-    }];
+    console.log("callModel: Invoking model with messages:", {messages: JSON.stringify(state.messages)});
+    const response = await model.invoke(state.messages); 
+    console.log("callModel: Raw response from model.invoke:", {response: JSON.stringify(response)});
 
-    // Construct a new AIMessage with empty content, ensuring tool_calls carries the structured output
-    const aiMessage = new AIMessage({
-      content: "", // Ensure content is a simple string for Langgraph's state
-      tool_calls: finalToolCalls,
-    });
-    return { messages: [aiMessage] };
+    return { messages: [new AIMessage({ content: JSON.stringify(response) })] };
   };
 
   // Define the function that determines whether to continue or not
   const shouldContinue = ({ messages }: typeof MessagesAnnotation.State) => {
     const lastMessage = messages[messages.length - 1];
+    console.log("shouldContinue: Last message:", {lastMessage: JSON.stringify(lastMessage)});
 
     // If the last message is an AIMessage and explicitly has tool_calls, route to process them.
-    if (lastMessage instanceof AIMessage && lastMessage.tool_calls && lastMessage.tool_calls.length > 0) {
+    if (lastMessage instanceof AIMessage && lastMessage.tool_calls && lastMessage.tool_calls.length) {
       console.log(`Agent generated structured output with ${lastMessage.tool_calls.length} tool call(s).`);
       return "tools";
     }
+    console.log("shouldContinue: No tool_calls in last message. Ending conversation.");
     // Otherwise, end the conversation
     return "__end__";
   };
@@ -119,7 +111,6 @@ export const getChartRecommendationWithData = async (requestId: string): Promise
   try {
     console.log(`Getting chart recommendation with data for request ID: ${requestId}`);
     const summarizedCsvContent = getSummarizedCsvContent(requestId, 3); // Get headers and first 3 rows
-    console.log(`summarizedCsvContent: ${summarizedCsvContent}`);
     const promptMessage = new HumanMessage(`
 # Expert Data Visualization Analyst System Prompt
 
@@ -200,17 +191,8 @@ ${summarizedCsvContent}
     });
 
     const lastMessage = result.messages[result.messages.length - 1];
-
-    // Explicitly extract structured data from tool_calls args
-    const toolCall = (lastMessage as AIMessage).tool_calls?.[0];
-    if (toolCall && toolCall.name === 'extract' && toolCall.args) {
-      const structuredOutput = ZSuggestionsResponse.parse(toolCall.args);
-      return structuredOutput;
-    }
-
-    // Fallback if structured output is not in tool_calls (this path should be rare now)
-    throw new Error("LLM did not return structured output in tool_calls as expected.");
-
+    const lastMessageContent = JSON.parse(lastMessage.content as string);
+    return lastMessageContent;
   } catch (error) {
     console.error("Error getting chart recommendation with data:", error);
     throw error;
